@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Projets — AQWA</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Barlow:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1a1a1a;
+    --surface: #242424;
+    --border: #3a3a3a;
+    --accent: #e04020;
+    --text: #e8e8e8;
+    --muted: #7a7a7a;
+    --tag-bg: #2e2e2e;
+    --tag-color: #aaaaaa;
+    --danger: #e04020;
+    --warning: #d08030;
+    --success: #3d9a58;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Mono', monospace; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  header { background: #111; border-bottom: 2px solid var(--accent); padding: 16px 40px; display: flex; align-items: center; gap: 20px; }
+  .header-sep { width: 1px; height: 30px; background: var(--border); }
+  .header-title { font-family: 'Barlow', sans-serif; font-weight: 600; font-size: 1rem; color: var(--text); letter-spacing: 0.05em; text-transform: uppercase; }
+  .header-sub { font-size: 0.7rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+  .drive-status { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 0.72rem; color: var(--muted); }
+  .drive-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); transition: 0.3s; }
+  .drive-dot.connected { background: var(--success); }
+  .drive-dot.syncing { background: var(--warning); animation: pulse 1s infinite; }
+  .drive-dot.error { background: var(--danger); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .btn-drive { font-family: 'DM Mono', monospace; font-size: 0.72rem; padding: 7px 14px; border-radius: 4px; border: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer; transition: 0.15s; }
+  .btn-drive:hover { border-color: var(--accent); color: var(--accent); }
+
+  .stat-bar { display: flex; gap: 20px; padding: 14px 40px; background: #111; border-bottom: 1px solid var(--border); flex-wrap: wrap; align-items: center; }
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .stat-num { font-family: 'Barlow', sans-serif; font-size: 1.4rem; font-weight: 600; color: var(--accent); line-height: 1; }
+  .stat-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+  .stat-sep { width: 1px; background: var(--border); align-self: stretch; }
+
+  .toolbar { padding: 16px 40px; display: flex; gap: 12px; align-items: center; border-bottom: 1px solid var(--border); background: var(--surface); flex-wrap: wrap; }
+  .toolbar input[type="text"] { font-family: 'DM Mono', monospace; font-size: 0.78rem; background: var(--bg); border: 1px solid var(--border); padding: 8px 12px; border-radius: 4px; color: var(--text); width: 200px; outline: none; }
+  .toolbar input[type="text"]:focus { border-color: var(--accent); }
+  .filter-label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  select { font-family: 'DM Mono', monospace; font-size: 0.75rem; background: var(--bg); border: 1px solid var(--border); padding: 8px 10px; border-radius: 4px; color: var(--text); cursor: pointer; outline: none; }
+  select:focus { border-color: var(--accent); }
+
+  .btn { font-family: 'DM Mono', monospace; font-size: 0.75rem; padding: 8px 16px; border-radius: 4px; border: none; cursor: pointer; transition: 0.15s; letter-spacing: 0.03em; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #c03010; }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-danger { background: transparent; border: 1px solid #5a2020; color: var(--danger); font-size: 0.7rem; padding: 4px 9px; }
+  .btn-danger:hover { background: #2a1010; }
+  .btn-edit { background: transparent; border: 1px solid var(--border); color: var(--muted); font-size: 0.7rem; padding: 4px 9px; }
+  .btn-edit:hover { border-color: var(--accent); color: var(--accent); }
+
+  .main { padding: 24px 40px; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.76rem; }
+  thead tr { background: #111; }
+  th { padding: 11px 13px; text-align: left; font-weight: 500; font-size: 0.67rem; text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; cursor: pointer; user-select: none; color: var(--muted); border-bottom: 1px solid var(--border); }
+  th:hover { color: var(--text); }
+  td { padding: 10px 13px; border-bottom: 1px solid #2e2e2e; vertical-align: middle; color: var(--text); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #2a2a2a; }
+
+  .tag { display: inline-block; font-size: 0.65rem; padding: 2px 7px; border-radius: 20px; background: var(--tag-bg); color: var(--tag-color); white-space: nowrap; margin: 1px; border: 1px solid var(--border); }
+  .tag.none { color: #555; border-color: #2e2e2e; }
+
+  .status-badge, .factu-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 0.68rem; padding: 3px 9px; border-radius: 20px; white-space: nowrap; font-weight: 500; }
+  .status-badge::before, .factu-badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; }
+  .status-en-cours { background: #2a2000; color: var(--warning); }
+  .status-en-cours::before { background: var(--warning); }
+  .status-termine { background: #0a2a15; color: var(--success); }
+  .status-termine::before { background: var(--success); }
+  .status-modification { background: #2a0a0a; color: var(--danger); }
+  .status-modification::before { background: var(--danger); }
+  .status-attente { background: #222; color: var(--muted); }
+  .status-attente::before { background: var(--muted); }
+  .factu-a-facturer { background: #2a2000; color: var(--warning); }
+  .factu-a-facturer::before { background: var(--warning); }
+  .factu-facture { background: #0a2a15; color: var(--success); }
+  .factu-facture::before { background: var(--success); }
+  .factu-nd { background: #222; color: var(--muted); }
+  .factu-nd::before { background: var(--muted); }
+
+  .actions { display: flex; gap: 5px; }
+  .empty-state { text-align: center; padding: 60px; color: var(--muted); font-size: 0.8rem; }
+  .empty-state .icon { font-size: 2rem; margin-bottom: 10px; }
+  .date-overdue { color: var(--danger); font-weight: 500; }
+  .date-soon { color: var(--warning); }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 28px; width: 90%; max-width: 720px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.6); position: relative; }
+  .modal h2 { font-family: 'Barlow', sans-serif; font-weight: 600; font-size: 1.1rem; color: var(--accent); margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.06em; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+  input[type="text"], input[type="date"], textarea, .form-select { font-family: 'DM Mono', monospace; font-size: 0.8rem; background: var(--bg); border: 1px solid var(--border); padding: 8px 11px; border-radius: 4px; color: var(--text); outline: none; transition: 0.15s; }
+  input[type="text"]:focus, input[type="date"]:focus, textarea:focus, .form-select:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 65px; }
+  .section-title { font-size: 0.67rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); font-weight: 500; margin: 18px 0 10px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
+  .checkbox-group { display: flex; gap: 14px; flex-wrap: wrap; }
+  .check-item { display: flex; align-items: center; gap: 7px; font-size: 0.78rem; cursor: pointer; }
+  .check-item input[type="checkbox"] { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .close-btn { position: absolute; top: 14px; right: 16px; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--muted); line-height: 1; }
+  .close-btn:hover { color: var(--danger); }
+
+  .toast { position: fixed; bottom: 24px; right: 24px; background: #111; border: 1px solid var(--border); border-left: 3px solid var(--success); color: var(--text); font-size: 0.75rem; padding: 10px 16px; border-radius: 4px; z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+  .toast.error { border-left-color: var(--danger); }
+
+  @media (max-width: 700px) {
+    header, .toolbar, .main, .stat-bar { padding-left: 16px; padding-right: 16px; }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="header-title">AQWA</div>
+  </div>
+  <div class="header-sep"></div>
+  <div>
+    <div class="header-title" style="font-size:0.85rem">CRM Projets</div>
+    <div class="header-sub">Suivi salles d'eau &amp; bain</div>
+  </div>
+  <div class="drive-status" id="drive-status">
+    <div class="drive-dot" id="drive-dot"></div>
+    <span id="drive-label">Non connecté</span>
+    <button class="btn-drive" id="btn-connect" onclick="connectDrive()">Connecter Drive</button>
+  </div>
+</header>
+
+<div class="stat-bar">
+  <div class="stat"><span class="stat-num" id="stat-total">0</span><span class="stat-label">Total</span></div>
+  <div class="stat-sep"></div>
+  <div class="stat"><span class="stat-num" id="stat-encours">0</span><span class="stat-label">En cours</span></div>
+  <div class="stat-sep"></div>
+  <div class="stat"><span class="stat-num" id="stat-termine">0</span><span class="stat-label">Terminés</span></div>
+  <div class="stat-sep"></div>
+  <div class="stat"><span class="stat-num" id="stat-modif">0</span><span class="stat-label">Modifications</span></div>
+  <div class="stat-sep"></div>
+  <div class="stat"><span class="stat-num" id="stat-afacturer">0</span><span class="stat-label">À facturer</span></div>
+</div>
+
+<div class="toolbar">
+  <span class="filter-label">Filtrer :</span>
+  <input type="text" id="search" placeholder="Client, projet…">
+  <select id="filter-statut">
+    <option value="">Tous statuts</option>
+    <option value="en-cours">En cours</option>
+    <option value="termine">Terminé</option>
+    <option value="modification">Modification</option>
+    <option value="attente">En attente</option>
+  </select>
+  <select id="filter-factu">
+    <option value="">Toutes facturations</option>
+    <option value="a-facturer">À facturer</option>
+    <option value="facture">Facturé</option>
+  </select>
+  <select id="filter-piece">
+    <option value="">Toutes pièces</option>
+    <option value="salle-eau">Salle d'eau</option>
+    <option value="sdb-grande">SDB grande</option>
+    <option value="sdb-petite">SDB petite</option>
+    <option value="sdb-separee">SDB séparée</option>
+  </select>
+  <div style="margin-left:auto; display:flex; gap:8px">
+    <button class="btn btn-outline" onclick="exportJSON()">⬇ Export JSON</button>
+    <label class="btn btn-outline" style="cursor:pointer">⬆ Import JSON<input type="file" accept=".json" style="display:none" onchange="importJSON(event)"></label>
+    <button class="btn btn-primary" onclick="openModal()">+ Nouveau projet</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="table-wrap">
+    <table id="projet-table">
+      <thead>
+        <tr>
+          <th onclick="sortTable('client')">Client ↕</th>
+          <th onclick="sortTable('entreprise')">Entreprise ↕</th>
+          <th onclick="sortTable('dessinateur')">Dessinateur ↕</th>
+          <th onclick="sortTable('projet')">Projet ↕</th>
+          <th>Pièces</th>
+          <th onclick="sortTable('dateReception')">Réception ↕</th>
+          <th onclick="sortTable('dateRetour')">Retour ↕</th>
+          <th onclick="sortTable('statut')">Statut ↕</th>
+          <th onclick="sortTable('facturation')">Facturation ↕</th>
+          <th>Modifications</th>
+          <th>Notes</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div id="empty-state" class="empty-state" style="display:none">
+      <div class="icon">📋</div>
+      <div>Aucun projet trouvé.<br>Cliquez sur « Nouveau projet » pour commencer.</div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <button class="close-btn" onclick="closeModal()">✕</button>
+    <h2 id="modal-title">Nouveau projet</h2>
+    <div class="section-title">Informations générales</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Client *</label><input type="text" id="f-client" placeholder="Nom du client"></div>
+      <div class="form-group"><label>Entreprise</label><input type="text" id="f-entreprise" placeholder="Nom de l'entreprise"></div>
+      <div class="form-group"><label>Dessinateur</label><input type="text" id="f-dessinateur" placeholder="Nom du dessinateur"></div>
+      <div class="form-group"><label>Projet *</label><input type="text" id="f-projet" placeholder="Nom ou référence"></div>
+    </div>
+    <div class="section-title">Pièces concernées</div>
+    <div class="checkbox-group">
+      <label class="check-item"><input type="checkbox" id="f-salle-eau"> Salle d'eau</label>
+      <label class="check-item"><input type="checkbox" id="f-sdb-grande"> Salle de bain grande</label>
+      <label class="check-item"><input type="checkbox" id="f-sdb-petite"> Salle de bain petite</label>
+      <label class="check-item"><input type="checkbox" id="f-sdb-separee"> Salle de bain séparée</label>
+    </div>
+    <div class="section-title">Documents &amp; dates</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Date réception</label><input type="date" id="f-dateReception"></div>
+      <div class="form-group"><label>Date retour prévue</label><input type="date" id="f-dateRetour"></div>
+      <div class="form-group">
+        <label>Statut</label>
+        <select class="form-select" id="f-statut">
+          <option value="attente">En attente</option>
+          <option value="en-cours">En cours</option>
+          <option value="termine">Terminé</option>
+          <option value="modification">Modification</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Facturation</label>
+        <select class="form-select" id="f-facturation">
+          <option value="nd">Non défini</option>
+          <option value="a-facturer">À facturer</option>
+          <option value="facture">Déjà facturé</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Modifications</label><input type="text" id="f-modifications" placeholder="Ex: plan revu…"></div>
+      <div class="form-group full"><label>Notes</label><textarea id="f-notes" placeholder="Remarques libres…"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="saveProject()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const CLIENT_ID = '505442840775-uv1i446anb2urnp0mkfdvlgp1etnicpv.apps.googleusercontent.com';
+  const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+  const FOLDER_NAME = 'Suivis Projet AQWA';
+  const FILE_NAME = 'crm-projets-data.json';
+
+  let projects = JSON.parse(localStorage.getItem('crm_projects') || '[]');
+  let editingId = null;
+  let sortKey = 'client';
+  let sortDir = 1;
+  let tokenClient = null;
+  let accessToken = null;
+  let driveFileId = null;
+  let driveFolderId = null;
+
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isError ? ' error' : '');
+    setTimeout(() => t.className = 'toast', 3500);
+  }
+
+  function setDriveStatus(status, label) {
+    document.getElementById('drive-dot').className = 'drive-dot ' + status;
+    document.getElementById('drive-label').textContent = label;
+  }
+
+  window.onload = function() {
+    const checkGSI = setInterval(() => {
+      if (window.google && window.google.accounts) {
+        clearInterval(checkGSI);
+        tokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: CLIENT_ID,
+          scope: SCOPES,
+          callback: async (response) => {
+            if (response.error) {
+              setDriveStatus('error', 'Erreur connexion');
+              showToast('Erreur de connexion Google Drive', true);
+              return;
+            }
+            accessToken = response.access_token;
+            sessionStorage.setItem('drive_token', accessToken);
+            document.getElementById('btn-connect').textContent = 'Déconnexion';
+            document.getElementById('btn-connect').onclick = disconnectDrive;
+            setDriveStatus('connected', 'Drive connecté');
+            showToast('Connecté à Google Drive');
+            await initDriveFile();
+            await loadFromDrive();
+          }
+        });
+        const savedToken = sessionStorage.getItem('drive_token');
+        if (savedToken) {
+          accessToken = savedToken;
+          document.getElementById('btn-connect').textContent = 'Déconnexion';
+          document.getElementById('btn-connect').onclick = disconnectDrive;
+          setDriveStatus('connected', 'Drive connecté');
+          initDriveFile().then(() => loadFromDrive());
+        }
+      }
+    }, 200);
+    render();
+  };
+
+  function connectDrive() {
+    if (!tokenClient) { showToast('Chargement en cours, réessaie dans 2 secondes', true); return; }
+    tokenClient.requestAccessToken();
+  }
+
+  function disconnectDrive() {
+    accessToken = null;
+    sessionStorage.removeItem('drive_token');
+    document.getElementById('btn-connect').textContent = 'Connecter Drive';
+    document.getElementById('btn-connect').onclick = connectDrive;
+    setDriveStatus('', 'Non connecté');
+    showToast('Déconnecté de Google Drive');
+  }
+
+  async function initDriveFile() {
+    try {
+      setDriveStatus('syncing', 'Initialisation…');
+      const folderRes = await fetch(
+        `https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(FOLDER_NAME)}' and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id)`,
+        { headers: { 'Authorization': 'Bearer ' + accessToken } }
+      );
+      const folderData = await folderRes.json();
+      if (folderData.files && folderData.files.length > 0) {
+        driveFolderId = folderData.files[0].id;
+      } else {
+        const cf = await fetch('https://www.googleapis.com/drive/v3/files', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' })
+        });
+        driveFolderId = (await cf.json()).id;
+      }
+      const fileRes = await fetch(
+        `https://www.googleapis.com/drive/v3/files?q=name='${FILE_NAME}' and '${driveFolderId}' in parents and trashed=false&fields=files(id)`,
+        { headers: { 'Authorization': 'Bearer ' + accessToken } }
+      );
+      const fileData = await fileRes.json();
+      if (fileData.files && fileData.files.length > 0) driveFileId = fileData.files[0].id;
+      setDriveStatus('connected', 'Drive connecté');
+    } catch(e) {
+      setDriveStatus('error', 'Erreur Drive');
+    }
+  }
+
+  async function loadFromDrive() {
+    if (!accessToken || !driveFileId) return;
+    try {
+      setDriveStatus('syncing', 'Chargement…');
+      const res = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`, {
+        headers: { 'Authorization': 'Bearer ' + accessToken }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          projects = data;
+          localStorage.setItem('crm_projects', JSON.stringify(projects));
+          render();
+          showToast('Données chargées depuis Drive (' + projects.length + ' projets)');
+        }
+      }
+      setDriveStatus('connected', 'Drive connecté');
+    } catch(e) { setDriveStatus('error', 'Erreur chargement'); }
+  }
+
+  async function saveToDrive() {
+    if (!accessToken || !driveFolderId) return;
+    try {
+      setDriveStatus('syncing', 'Sauvegarde…');
+      const content = JSON.stringify(projects, null, 2);
+      if (driveFileId) {
+        await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`, {
+          method: 'PATCH',
+          headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+          body: content
+        });
+      } else {
+        const form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify({ name: FILE_NAME, parents: [driveFolderId] })], { type: 'application/json' }));
+        form.append('file', new Blob([content], { type: 'application/json' }));
+        const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + accessToken },
+          body: form
+        });
+        driveFileId = (await res.json()).id;
+      }
+      setDriveStatus('connected', 'Drive connecté');
+      showToast('Sauvegardé sur Google Drive ✓');
+    } catch(e) {
+      setDriveStatus('error', 'Erreur sauvegarde');
+      showToast('Erreur sauvegarde Drive', true);
+    }
+  }
+
+  function save() {
+    localStorage.setItem('crm_projects', JSON.stringify(projects));
+    saveToDrive();
+  }
+
+  function exportJSON() {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(projects, null, 2)], { type: 'application/json' }));
+    a.download = 'crm-projets-' + new Date().toISOString().slice(0,10) + '.json';
+    a.click();
+  }
+
+  function importJSON(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (Array.isArray(data)) { projects = data; save(); render(); showToast('Import réussi : ' + data.length + ' projets'); }
+        else showToast('Fichier JSON invalide', true);
+      } catch { showToast('Erreur lecture fichier', true); }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }
+
+  function openModal(id = null) {
+    editingId = id;
+    const p = id ? projects.find(x => x.id === id) : null;
+    document.getElementById('modal-title').textContent = id ? 'Modifier le projet' : 'Nouveau projet';
+    ['client','entreprise','dessinateur','projet','dateReception','dateRetour','modifications','notes'].forEach(f => {
+      document.getElementById('f-'+f).value = p ? (p[f] || '') : '';
+    });
+    document.getElementById('f-statut').value = p ? p.statut : 'attente';
+    document.getElementById('f-facturation').value = p ? (p.facturation || 'nd') : 'nd';
+    ['salle-eau','sdb-grande','sdb-petite','sdb-separee'].forEach(k => {
+      document.getElementById('f-'+k).checked = p ? !!(p.pieces && p.pieces.includes(k)) : false;
+    });
+    document.getElementById('modal-overlay').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+    editingId = null;
+  }
+
+  function saveProject() {
+    const client = document.getElementById('f-client').value.trim();
+    const projet = document.getElementById('f-projet').value.trim();
+    if (!client || !projet) { showToast('Client et Projet sont obligatoires', true); return; }
+    const pieces = ['salle-eau','sdb-grande','sdb-petite','sdb-separee'].filter(k => document.getElementById('f-'+k).checked);
+    const data = {
+      client, projet, pieces,
+      entreprise: document.getElementById('f-entreprise').value.trim(),
+      dessinateur: document.getElementById('f-dessinateur').value.trim(),
+      dateReception: document.getElementById('f-dateReception').value,
+      dateRetour: document.getElementById('f-dateRetour').value,
+      statut: document.getElementById('f-statut').value,
+      facturation: document.getElementById('f-facturation').value,
+      modifications: document.getElementById('f-modifications').value.trim(),
+      notes: document.getElementById('f-notes').value.trim(),
+    };
+    if (editingId) {
+      projects[projects.findIndex(x => x.id === editingId)] = { ...data, id: editingId };
+    } else {
+      data.id = Date.now().toString();
+      projects.push(data);
+    }
+    save(); closeModal(); render();
+  }
+
+  function deleteProject(id) {
+    if (!confirm('Supprimer ce projet ?')) return;
+    projects = projects.filter(x => x.id !== id);
+    save(); render();
+  }
+
+  function sortTable(key) {
+    if (sortKey === key) sortDir *= -1; else { sortKey = key; sortDir = 1; }
+    render();
+  }
+
+  const PIECE_LABELS = { 'salle-eau': "Salle d'eau", 'sdb-grande': 'SDB grande', 'sdb-petite': 'SDB petite', 'sdb-separee': 'SDB séparée' };
+  const STATUS_LABELS = { 'en-cours': 'En cours', 'termine': 'Terminé', 'modification': 'Modification', 'attente': 'En attente' };
+  const FACTU_LABELS = { 'a-facturer': 'À facturer', 'facture': 'Facturé', 'nd': '—' };
+
+  function formatDate(d) { return d ? new Date(d).toLocaleDateString('fr-CH') : ''; }
+  function dateClass(d) {
+    if (!d) return '';
+    const diff = (new Date(d) - new Date()) / 86400000;
+    return diff < 0 ? 'date-overdue' : diff <= 3 ? 'date-soon' : '';
+  }
+
+  function render() {
+    const search = document.getElementById('search').value.toLowerCase();
+    const filterStatut = document.getElementById('filter-statut').value;
+    const filterPiece = document.getElementById('filter-piece').value;
+    const filterFactu = document.getElementById('filter-factu').value;
+    let list = [...projects];
+    if (search) list = list.filter(p => [p.client, p.entreprise, p.dessinateur, p.projet, p.notes].join(' ').toLowerCase().includes(search));
+    if (filterStatut) list = list.filter(p => p.statut === filterStatut);
+    if (filterPiece) list = list.filter(p => p.pieces && p.pieces.includes(filterPiece));
+    if (filterFactu) list = list.filter(p => (p.facturation || 'nd') === filterFactu);
+    list.sort((a, b) => {
+      const va = (a[sortKey] || '').toString().toLowerCase();
+      const vb = (b[sortKey] || '').toString().toLowerCase();
+      return va < vb ? -sortDir : va > vb ? sortDir : 0;
+    });
+    const tbody = document.getElementById('tbody');
+    tbody.innerHTML = '';
+    list.forEach(p => {
+      const tr = document.createElement('tr');
+      const pieceTags = (p.pieces || []).map(k => `<span class="tag">${PIECE_LABELS[k]}</span>`).join('') || '<span class="tag none">—</span>';
+      tr.innerHTML = `
+        <td>${p.client}</td><td>${p.entreprise || '—'}</td><td>${p.dessinateur || '—'}</td><td>${p.projet}</td>
+        <td>${pieceTags}</td>
+        <td>${formatDate(p.dateReception) || '—'}</td>
+        <td class="${dateClass(p.dateRetour)}">${formatDate(p.dateRetour) || '—'}</td>
+        <td><span class="status-badge status-${p.statut}">${STATUS_LABELS[p.statut]}</span></td>
+        <td><span class="factu-badge factu-${p.facturation || 'nd'}">${FACTU_LABELS[p.facturation || 'nd']}</span></td>
+        <td>${p.modifications || '—'}</td>
+        <td title="${p.notes || ''}">${p.notes ? p.notes.substring(0,28)+(p.notes.length>28?'…':'') : '—'}</td>
+        <td><div class="actions">
+          <button class="btn btn-edit" onclick="openModal('${p.id}')">Éditer</button>
+          <button class="btn btn-danger" onclick="deleteProject('${p.id}')">✕</button>
+        </div></td>`;
+      tbody.appendChild(tr);
+    });
+    document.getElementById('empty-state').style.display = list.length === 0 ? 'block' : 'none';
+    document.getElementById('projet-table').style.display = list.length === 0 ? 'none' : 'table';
+    document.getElementById('stat-total').textContent = projects.length;
+    document.getElementById('stat-encours').textContent = projects.filter(p => p.statut === 'en-cours').length;
+    document.getElementById('stat-termine').textContent = projects.filter(p => p.statut === 'termine').length;
+    document.getElementById('stat-modif').textContent = projects.filter(p => p.statut === 'modification').length;
+    document.getElementById('stat-afacturer').textContent = projects.filter(p => p.facturation === 'a-facturer').length;
+  }
+
+  document.getElementById('search').addEventListener('input', render);
+  document.getElementById('filter-statut').addEventListener('change', render);
+  document.getElementById('filter-piece').addEventListener('change', render);
+  document.getElementById('filter-factu').addEventListener('change', render);
+  document.getElementById('modal-overlay').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+</script>
+</body>
+</html>
