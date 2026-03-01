@@ -39,6 +39,7 @@
   .stat-bar { display: flex; gap: 20px; padding: 14px 40px; background: #111; border-bottom: 1px solid var(--border); flex-wrap: wrap; align-items: center; }
   .stat { display: flex; flex-direction: column; gap: 2px; }
   .stat-num { font-family: 'Barlow', sans-serif; font-size: 1.4rem; font-weight: 600; color: var(--accent); line-height: 1; }
+  .stat-num.chf { font-size: 1.1rem; }
   .stat-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
   .stat-sep { width: 1px; background: var(--border); align-self: stretch; }
 
@@ -89,6 +90,9 @@
   .factu-nd { background: #222; color: var(--muted); }
   .factu-nd::before { background: var(--muted); }
 
+  .montant-cell { font-family: 'Barlow', sans-serif; font-size: 0.82rem; color: var(--text); white-space: nowrap; }
+  .montant-cell.empty { color: var(--muted); }
+
   .actions { display: flex; gap: 5px; }
   .empty-state { text-align: center; padding: 60px; color: var(--muted); font-size: 0.8rem; }
   .empty-state .icon { font-size: 2rem; margin-bottom: 10px; }
@@ -103,8 +107,8 @@
   .form-group { display: flex; flex-direction: column; gap: 5px; }
   .form-group.full { grid-column: 1 / -1; }
   label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
-  input[type="text"], input[type="date"], textarea, .form-select { font-family: 'DM Mono', monospace; font-size: 0.8rem; background: var(--bg); border: 1px solid var(--border); padding: 8px 11px; border-radius: 4px; color: var(--text); outline: none; transition: 0.15s; }
-  input[type="text"]:focus, input[type="date"]:focus, textarea:focus, .form-select:focus { border-color: var(--accent); }
+  input[type="text"], input[type="date"], input[type="number"], textarea, .form-select { font-family: 'DM Mono', monospace; font-size: 0.8rem; background: var(--bg); border: 1px solid var(--border); padding: 8px 11px; border-radius: 4px; color: var(--text); outline: none; transition: 0.15s; }
+  input[type="text"]:focus, input[type="date"]:focus, input[type="number"]:focus, textarea:focus, .form-select:focus { border-color: var(--accent); }
   textarea { resize: vertical; min-height: 65px; }
   .section-title { font-size: 0.67rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); font-weight: 500; margin: 18px 0 10px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
   .checkbox-group { display: flex; gap: 14px; flex-wrap: wrap; }
@@ -133,7 +137,7 @@
   <div class="header-sep"></div>
   <div>
     <div class="header-title" style="font-size:0.85rem">CRM Projets</div>
-    <div class="header-sub">Suivi salles d'eau &amp; bain</div>
+    <div class="header-sub">Suivi salles de bain</div>
   </div>
   <div class="drive-status" id="drive-status">
     <div class="drive-dot" id="drive-dot"></div>
@@ -152,6 +156,10 @@
   <div class="stat"><span class="stat-num" id="stat-modif">0</span><span class="stat-label">Modifications</span></div>
   <div class="stat-sep"></div>
   <div class="stat"><span class="stat-num" id="stat-afacturer">0</span><span class="stat-label">À facturer</span></div>
+  <div class="stat-sep"></div>
+  <div class="stat"><span class="stat-num chf" id="stat-montant-afacturer">0 CHF</span><span class="stat-label">Montant à facturer</span></div>
+  <div class="stat-sep"></div>
+  <div class="stat"><span class="stat-num chf" id="stat-montant-facture">0 CHF</span><span class="stat-label">Montant facturé</span></div>
 </div>
 
 <div class="toolbar">
@@ -171,10 +179,9 @@
   </select>
   <select id="filter-piece">
     <option value="">Toutes pièces</option>
-    <option value="salle-eau">Salle d'eau</option>
-    <option value="sdb-grande">SDB grande</option>
-    <option value="sdb-petite">SDB petite</option>
-    <option value="sdb-separee">SDB séparée</option>
+    <option value="sdb-normale">Salle de bain normale</option>
+    <option value="sdb-separee">Salle de bain séparée</option>
+    <option value="sdb-grande">Grande salle de bain</option>
   </select>
   <div style="margin-left:auto; display:flex; gap:8px">
     <button class="btn btn-outline" onclick="exportJSON()">⬇ Export JSON</button>
@@ -197,6 +204,7 @@
           <th onclick="sortTable('dateRetour')">Retour ↕</th>
           <th onclick="sortTable('statut')">Statut ↕</th>
           <th onclick="sortTable('facturation')">Facturation ↕</th>
+          <th onclick="sortTable('montant')">Montant ↕</th>
           <th>Modifications</th>
           <th>Notes</th>
           <th></th>
@@ -224,10 +232,9 @@
     </div>
     <div class="section-title">Pièces concernées</div>
     <div class="checkbox-group">
-      <label class="check-item"><input type="checkbox" id="f-salle-eau"> Salle d'eau</label>
-      <label class="check-item"><input type="checkbox" id="f-sdb-grande"> Salle de bain grande</label>
-      <label class="check-item"><input type="checkbox" id="f-sdb-petite"> Salle de bain petite</label>
+      <label class="check-item"><input type="checkbox" id="f-sdb-normale"> Salle de bain normale</label>
       <label class="check-item"><input type="checkbox" id="f-sdb-separee"> Salle de bain séparée</label>
+      <label class="check-item"><input type="checkbox" id="f-sdb-grande"> Grande salle de bain</label>
     </div>
     <div class="section-title">Documents &amp; dates</div>
     <div class="form-grid">
@@ -250,6 +257,7 @@
           <option value="facture">Déjà facturé</option>
         </select>
       </div>
+      <div class="form-group"><label>Montant (CHF)</label><input type="number" id="f-montant" placeholder="0.00" min="0" step="0.01"></div>
       <div class="form-group"><label>Modifications</label><input type="text" id="f-modifications" placeholder="Ex: plan revu…"></div>
       <div class="form-group full"><label>Notes</label><textarea id="f-notes" placeholder="Remarques libres…"></textarea></div>
     </div>
@@ -453,9 +461,10 @@
     ['client','entreprise','dessinateur','projet','dateReception','dateRetour','modifications','notes'].forEach(f => {
       document.getElementById('f-'+f).value = p ? (p[f] || '') : '';
     });
+    document.getElementById('f-montant').value = p ? (p.montant || '') : '';
     document.getElementById('f-statut').value = p ? p.statut : 'attente';
     document.getElementById('f-facturation').value = p ? (p.facturation || 'nd') : 'nd';
-    ['salle-eau','sdb-grande','sdb-petite','sdb-separee'].forEach(k => {
+    ['sdb-normale','sdb-separee','sdb-grande'].forEach(k => {
       document.getElementById('f-'+k).checked = p ? !!(p.pieces && p.pieces.includes(k)) : false;
     });
     document.getElementById('modal-overlay').classList.add('open');
@@ -470,7 +479,8 @@
     const client = document.getElementById('f-client').value.trim();
     const projet = document.getElementById('f-projet').value.trim();
     if (!client || !projet) { showToast('Client et Projet sont obligatoires', true); return; }
-    const pieces = ['salle-eau','sdb-grande','sdb-petite','sdb-separee'].filter(k => document.getElementById('f-'+k).checked);
+    const pieces = ['sdb-normale','sdb-separee','sdb-grande'].filter(k => document.getElementById('f-'+k).checked);
+    const montantVal = document.getElementById('f-montant').value;
     const data = {
       client, projet, pieces,
       entreprise: document.getElementById('f-entreprise').value.trim(),
@@ -479,6 +489,7 @@
       dateRetour: document.getElementById('f-dateRetour').value,
       statut: document.getElementById('f-statut').value,
       facturation: document.getElementById('f-facturation').value,
+      montant: montantVal !== '' ? parseFloat(montantVal) : null,
       modifications: document.getElementById('f-modifications').value.trim(),
       notes: document.getElementById('f-notes').value.trim(),
     };
@@ -502,7 +513,7 @@
     render();
   }
 
-  const PIECE_LABELS = { 'salle-eau': "Salle d'eau", 'sdb-grande': 'SDB grande', 'sdb-petite': 'SDB petite', 'sdb-separee': 'SDB séparée' };
+  const PIECE_LABELS = { 'sdb-normale': 'SDB normale', 'sdb-separee': 'SDB séparée', 'sdb-grande': 'Grande SDB' };
   const STATUS_LABELS = { 'en-cours': 'En cours', 'termine': 'Terminé', 'modification': 'Modification', 'attente': 'En attente' };
   const FACTU_LABELS = { 'a-facturer': 'À facturer', 'facture': 'Facturé', 'nd': '—' };
 
@@ -511,6 +522,10 @@
     if (!d) return '';
     const diff = (new Date(d) - new Date()) / 86400000;
     return diff < 0 ? 'date-overdue' : diff <= 3 ? 'date-soon' : '';
+  }
+  function formatCHF(val) {
+    if (val === null || val === undefined || val === '') return null;
+    return new Intl.NumberFormat('fr-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val) + ' CHF';
   }
 
   function render() {
@@ -524,8 +539,14 @@
     if (filterPiece) list = list.filter(p => p.pieces && p.pieces.includes(filterPiece));
     if (filterFactu) list = list.filter(p => (p.facturation || 'nd') === filterFactu);
     list.sort((a, b) => {
-      const va = (a[sortKey] || '').toString().toLowerCase();
-      const vb = (b[sortKey] || '').toString().toLowerCase();
+      let va, vb;
+      if (sortKey === 'montant') {
+        va = a.montant || 0;
+        vb = b.montant || 0;
+        return (va - vb) * sortDir;
+      }
+      va = (a[sortKey] || '').toString().toLowerCase();
+      vb = (b[sortKey] || '').toString().toLowerCase();
       return va < vb ? -sortDir : va > vb ? sortDir : 0;
     });
     const tbody = document.getElementById('tbody');
@@ -533,6 +554,10 @@
     list.forEach(p => {
       const tr = document.createElement('tr');
       const pieceTags = (p.pieces || []).map(k => `<span class="tag">${PIECE_LABELS[k]}</span>`).join('') || '<span class="tag none">—</span>';
+      const montantFormatted = formatCHF(p.montant);
+      const montantCell = montantFormatted
+        ? `<span class="montant-cell">${montantFormatted}</span>`
+        : `<span class="montant-cell empty">—</span>`;
       tr.innerHTML = `
         <td>${p.client}</td><td>${p.entreprise || '—'}</td><td>${p.dessinateur || '—'}</td><td>${p.projet}</td>
         <td>${pieceTags}</td>
@@ -540,6 +565,7 @@
         <td class="${dateClass(p.dateRetour)}">${formatDate(p.dateRetour) || '—'}</td>
         <td><span class="status-badge status-${p.statut}">${STATUS_LABELS[p.statut]}</span></td>
         <td><span class="factu-badge factu-${p.facturation || 'nd'}">${FACTU_LABELS[p.facturation || 'nd']}</span></td>
+        <td>${montantCell}</td>
         <td>${p.modifications || '—'}</td>
         <td title="${p.notes || ''}">${p.notes ? p.notes.substring(0,28)+(p.notes.length>28?'…':'') : '—'}</td>
         <td><div class="actions">
@@ -550,11 +576,23 @@
     });
     document.getElementById('empty-state').style.display = list.length === 0 ? 'block' : 'none';
     document.getElementById('projet-table').style.display = list.length === 0 ? 'none' : 'table';
+
+    // Stats compteurs
     document.getElementById('stat-total').textContent = projects.length;
     document.getElementById('stat-encours').textContent = projects.filter(p => p.statut === 'en-cours').length;
     document.getElementById('stat-termine').textContent = projects.filter(p => p.statut === 'termine').length;
     document.getElementById('stat-modif').textContent = projects.filter(p => p.statut === 'modification').length;
     document.getElementById('stat-afacturer').textContent = projects.filter(p => p.facturation === 'a-facturer').length;
+
+    // Stats montants
+    const totalAfacturer = projects
+      .filter(p => p.facturation === 'a-facturer' && p.montant)
+      .reduce((sum, p) => sum + p.montant, 0);
+    const totalFacture = projects
+      .filter(p => p.facturation === 'facture' && p.montant)
+      .reduce((sum, p) => sum + p.montant, 0);
+    document.getElementById('stat-montant-afacturer').textContent = new Intl.NumberFormat('fr-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalAfacturer) + ' CHF';
+    document.getElementById('stat-montant-facture').textContent = new Intl.NumberFormat('fr-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalFacture) + ' CHF';
   }
 
   document.getElementById('search').addEventListener('input', render);
